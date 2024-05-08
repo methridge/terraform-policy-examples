@@ -33,24 +33,23 @@ allowed_types := [
 #########
 
 # Rule to enforce "Name" tag on all instances
-mandatory_instance_tags if {
+tags[msg] if {
 	res := tfplan.resource_changes[_]
 	res.type in resource_types
 	res.change.actions[_] in actions
 	tags := [key | res.change.after.tags[key]]
 	required_tag := mandatory_tags[_]
 	required_tag in tags
+
+	msg := sprintf("Instance %v is missing mandatory tag %v", [res.name, required_tag])
 }
 
 # Rule to restrict instance types
-instance_type_allowed if {
+types[msg] if {
 	res := tfplan.resource_changes[_]
 	res.type in resource_types
 	res.change.actions[_] in actions
-    res.change.after.instance_type in allowed_types
-}
+	res.change.after.instance_type in allowed_types
 
-main if {
-	mandatory_instance_tags
-    instance_type_allowed
+	msg := sprintf("Instance %v is using disallowed instance type %v", [res.name, res.change.after.instance_type])
 }
